@@ -1,4 +1,4 @@
-module github.com/runletapp/go-console
+module github.com/admpub/gopty
 
 go 1.16
 
