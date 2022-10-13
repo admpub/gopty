@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"log"
+	"os"
+	"runtime"
 	"strconv"
 	"unicode/utf8"
 
@@ -129,14 +131,31 @@ func Websocket2PTY(ws WebsocketReader, pty interfaces.Console) {
 	}
 }
 
-// Bash Bash(wsc,120,60)
-func Bash(wsc Websocketer, cols, rows int) error {
+var bash string
+
+func init() {
+	if runtime.GOOS == "windows" {
+		bash = "cmd.exe"
+	} else {
+		shell := os.Getenv("SHELL")
+		if len(shell) == 0 {
+			shell = "/bin/bash"
+			if _, err := os.Stat(shell); err != nil {
+				shell = "/bin/sh"
+			}
+		}
+		bash = shell
+	}
+}
+
+// ServeWebsocket ServeWebsocket(wsc,120,60)
+func ServeWebsocket(wsc Websocketer, cols, rows int) error {
 	pty, err := New(cols, rows)
 	if err != nil {
 		return err
 	}
 	defer pty.Close()
-	args := []string{}
+	args := []string{bash}
 	err = pty.Start(args)
 	if err != nil {
 		err = fmt.Errorf("open terminal err: %w", err)
