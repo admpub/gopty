@@ -1,3 +1,4 @@
+//go:build !windows
 // +build !windows
 
 package console
@@ -8,7 +9,7 @@ import (
 
 	"github.com/creack/pty"
 
-	"github.com/runletapp/go-console/interfaces"
+	"github.com/admpub/gopty/interfaces"
 )
 
 var _ interfaces.Console = (*consoleNix)(nil)

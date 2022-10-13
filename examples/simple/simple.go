@@ -7,12 +7,12 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/runletapp/go-console"
+	"github.com/admpub/gopty"
 )
 
 func main() {
 
-	proc, err := console.New(120, 60)
+	proc, err := gopty.New(120, 60)
 	if err != nil {
 		panic(err)
 	}
