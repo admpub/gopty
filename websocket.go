@@ -3,6 +3,7 @@ package gopty
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"runtime"
@@ -132,10 +133,12 @@ func Websocket2PTY(ws WebsocketReader, pty interfaces.Console) {
 }
 
 var bash string
+var flagVar string
 
 func init() {
 	if runtime.GOOS == "windows" {
 		bash = "cmd.exe"
+		flagVar = "/c"
 	} else {
 		shell := os.Getenv("SHELL")
 		if len(shell) == 0 {
@@ -145,12 +148,18 @@ func init() {
 			}
 		}
 		bash = shell
+		flagVar = "-c"
 	}
 }
 
 // GetBash get bash file
 func GetBash() string {
 	return bash
+}
+
+// GetFlagVar bash flag variable name
+func GetFlagVar() string {
+	return flagVar
 }
 
 // ServeWebsocket ServeWebsocket(wsc,120,60)
@@ -163,7 +172,7 @@ func ServeWebsocket(wsc Websocketer, cols, rows int) error {
 	args := []string{bash}
 	err = pty.Start(args)
 	if err != nil {
-		err = fmt.Errorf("open terminal err: %w", err)
+		err = fmt.Errorf("[gopty] open terminal err: %w", err)
 		return err
 	}
 
@@ -171,4 +180,28 @@ func ServeWebsocket(wsc Websocketer, cols, rows int) error {
 	// block from close
 	Websocket2PTY(wsc, pty)
 	return nil
+}
+
+// Execute execute command
+func Execute(command string, resultWriter io.Writer) error {
+	var cols, rows = 120, 60
+	pty, err := New(cols, rows)
+	if err != nil {
+		return err
+	}
+	defer pty.Close()
+	args := []string{GetBash(), GetFlagVar(), command}
+	err = pty.Start(args)
+	if err != nil {
+		err = fmt.Errorf("[gopty] open terminal err: %w", err)
+		return err
+	}
+	go func() {
+		_, err = io.Copy(resultWriter, pty)
+		if err != nil {
+			log.Printf("[gopty] Error: %v\n", err)
+		}
+	}()
+	_, err = pty.Wait()
+	return err
 }
