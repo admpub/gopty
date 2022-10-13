@@ -1,7 +1,7 @@
 //go:build !windows
 // +build !windows
 
-package console
+package gopty
 
 import (
 	"os"

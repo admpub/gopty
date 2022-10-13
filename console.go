@@ -1,4 +1,4 @@
-package console
+package gopty
 
 import (
 	"github.com/admpub/gopty/interfaces"

@@ -1,4 +1,4 @@
-package console
+package gopty
 
 import (
 	"embed"
