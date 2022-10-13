@@ -1,10 +1,10 @@
 package gopty
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"strconv"
-	"strings"
 	"unicode/utf8"
 
 	"github.com/admpub/gopty/interfaces"
@@ -87,6 +87,11 @@ const (
 	PongMessage = 10
 )
 
+var (
+	resizePrefix = []byte("<RESIZE>")
+	comma        = []byte(",")
+)
+
 // Websocket2PTY websocket to pty
 func Websocket2PTY(ws WebsocketReader, pty interfaces.Console) {
 	for {
@@ -95,10 +100,9 @@ func Websocket2PTY(ws WebsocketReader, pty interfaces.Console) {
 			log.Println("[Websocket2PTY] websocket read error: ", err)
 			return
 		}
-		msg := string(message)
-		if strings.HasPrefix(msg, "<RESIZE>") {
-			size := msg[len("<RESIZE>"):]
-			sizeArr := strings.SplitN(size, ",", 2)
+		if bytes.HasPrefix(message, resizePrefix) {
+			size := message[len(resizePrefix):]
+			sizeArr := bytes.SplitN(size, comma, 2)
 			if len(sizeArr) != 2 {
 				_, err = pty.Write(message)
 				if err != nil {
@@ -106,12 +110,15 @@ func Websocket2PTY(ws WebsocketReader, pty interfaces.Console) {
 				}
 				continue
 			}
-			rows, _ := strconv.Atoi(sizeArr[0])
-			cols, _ := strconv.Atoi(sizeArr[1])
+			rows, _ := strconv.Atoi(string(sizeArr[0]))
+			cols, _ := strconv.Atoi(string(sizeArr[1]))
 			err = pty.SetSize(cols, rows)
-			log.Printf("[Websocket2PTY] pty resize window to %d, %d", cols, rows)
+			log.Printf("[Websocket2PTY] pty resize window to %d, %d\n", cols, rows)
 			if err != nil {
-				log.Println("[Websocket2PTY] pty resize error: ", err)
+				_, err = pty.Write([]byte(err.Error()))
+				if err != nil {
+					log.Println("[Websocket2PTY] pty write error: ", err)
+				}
 			}
 		} else {
 			_, err = pty.Write(message)
