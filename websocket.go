@@ -148,6 +148,11 @@ func init() {
 	}
 }
 
+// GetBash get bash file
+func GetBash() string {
+	return bash
+}
+
 // ServeWebsocket ServeWebsocket(wsc,120,60)
 func ServeWebsocket(wsc Websocketer, cols, rows int) error {
 	pty, err := New(cols, rows)
