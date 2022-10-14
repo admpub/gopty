@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"regexp"
 	"runtime"
 	"strconv"
 	"unicode/utf8"
@@ -91,12 +92,18 @@ const (
 )
 
 var (
-	resizePrefix = []byte("<RESIZE>")
-	comma        = []byte(",")
+	resizePrefix  = []byte("<RESIZE>")
+	comma         = []byte(",")
+	dangerCmdTips = []byte("Dangerous commands disabled: ")
+	dangerRmrf    = regexp.MustCompile(`^[\s]*rm[\s]+-[\w]*r[\w]*[\s]+([\.]/?|/|(..[/]?)+)[\s]`)
 )
 
+func IsDangerCommand(b []byte) bool {
+	return dangerRmrf.Match(b)
+}
+
 // Websocket2PTY websocket to pty
-func Websocket2PTY(ws WebsocketReader, pty interfaces.Console) {
+func Websocket2PTY(ws Websocketer, pty interfaces.Console) {
 	for {
 		mt, message, err := ws.ReadMessage()
 		if mt == -1 || err != nil {
@@ -107,9 +114,9 @@ func Websocket2PTY(ws WebsocketReader, pty interfaces.Console) {
 			size := message[len(resizePrefix):]
 			sizeArr := bytes.SplitN(size, comma, 2)
 			if len(sizeArr) != 2 {
-				_, err = pty.Write(message)
+				err = ws.WriteMessage(BinaryMessage, message)
 				if err != nil {
-					log.Println("[Websocket2PTY] pty write error: ", err)
+					log.Println("[Websocket2PTY] websocket write error: ", err)
 				}
 				continue
 			}
@@ -118,10 +125,18 @@ func Websocket2PTY(ws WebsocketReader, pty interfaces.Console) {
 			err = pty.SetSize(cols, rows)
 			log.Printf("[Websocket2PTY] pty resize window to %d, %d\n", cols, rows)
 			if err != nil {
-				_, err = pty.Write([]byte(err.Error()))
+				err = ws.WriteMessage(BinaryMessage, []byte(err.Error()))
 				if err != nil {
-					log.Println("[Websocket2PTY] pty write error: ", err)
+					log.Println("[Websocket2PTY] websocket write error: ", err)
 				}
+			}
+		} else if matches := dangerRmrf.FindAll(message, -1); len(matches) > 0 {
+			tips := make([]byte, len(dangerCmdTips), len(dangerCmdTips)+len(matches[0]))
+			copy(tips, dangerCmdTips)
+			tips = append(tips, matches[0]...)
+			err = ws.WriteMessage(BinaryMessage, tips)
+			if err != nil {
+				log.Println("[Websocket2PTY] websocket write error: ", err)
 			}
 		} else {
 			_, err = pty.Write(message)
