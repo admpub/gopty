@@ -25,18 +25,18 @@ func PTY2Websocket(ws WebsocketWriter, pty interfaces.Console) {
 		}
 
 		// Empty the overflow from the last read into the payload first.
-		payload = append(payload[0:], overflow...)
+		payload = append(payload, overflow...)
 		overflow = nil
 		// Then empty the new buf read into the payload.
 		payload = append(payload, buffer[:n]...)
 
 		// Strip out any incomplete utf-8 from current payload into overflow.
 		for !utf8.Valid(payload) {
-			overflow = append(overflow[:0], append(payload[len(payload)-1:], overflow[0:]...)...)
+			overflow = append(overflow, payload[len(payload)-1])
 			payload = payload[:len(payload)-1]
 		}
 
-		if len(payload) >= 1 {
+		if len(payload) > 0 {
 			err = ws.WriteMessage(BinaryMessage, payload[:])
 			if err != nil {
 				fmt.Println("[PTY2Websocket] write to ws error: ", err)
