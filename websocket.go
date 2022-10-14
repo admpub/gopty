@@ -95,7 +95,7 @@ var (
 	resizePrefix  = []byte("<RESIZE>")
 	comma         = []byte(",")
 	dangerCmdTips = []byte("Dangerous commands disabled: ")
-	dangerRmrf    = regexp.MustCompile(`^[\s]*rm[\s]+-[\w]*r[\w]*[\s]+([\.]/?|/|(..[/]?)+)[\s]`)
+	dangerRmrf    = regexp.MustCompile(`^[\s]*rm[\s]+-[\w]*r[\w]*[\s]+([\.]/?|/|(..[/]?)+)[*]*[\s]`)
 )
 
 func IsDangerCommand(b []byte) bool {
