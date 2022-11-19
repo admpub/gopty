@@ -128,7 +128,7 @@ func TestWait(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		args = []string{"powershell.exe", "-command", "\"sleep 5\""}
 	} else {
-		args = []string{"sleep", "5s"}
+		args = []string{"sleep", "5"}
 	}
 
 	proc, err := New(120, 60)
